@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+repo-analysis.md
+.env
+.env.*
+!.env.example
+
+# Local lecture materials are not part of the published project.
+/docs/
