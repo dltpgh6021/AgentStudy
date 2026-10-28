@@ -28,8 +28,10 @@ class ScriptedModel:
         return text.replace("TEST_SECRET", "[REDACTED]")
 
     def ask(self, prompt, schema, label):
-        self.records.append({"label": label, "status": "completed", "request": {"input": prompt}})
+        record = {"label": label, "status": "started", "request": {"input": prompt}}
+        self.records.append(record)
         if label == self.fail_at:
+            record.update(status="error", error="TEST stopped")
             raise GeminiError("TEST stopped")
         if label.endswith("propose"):
             count = schema["properties"]["candidates"]["maxItems"]
@@ -46,6 +48,7 @@ class ScriptedModel:
             response = {"answer": "TEST answer", "evidence": [{"path": "invented.py" if self.invalid_final else "a.py", "line": 1}],
                         "limitations": ["TEST only"]}
         validate(response, schema)
+        record["status"] = "completed"
         return response
 
 
@@ -120,6 +123,9 @@ class AgentTests(unittest.TestCase):
         self.assertEqual("failed", trace["status"])
         self.assertEqual(6, len(trace["nodes"]))
         self.assertNotIn("answer", trace)
+        calls = json.loads((output / "calls.json").read_text(encoding="utf-8"))
+        self.assertEqual("error", calls[-1]["status"])
+        self.assertEqual(3, sum(call["status"] == "completed" for call in calls))
 
     def test_final_answer_with_unobserved_reference_is_rejected(self):
         with self.assertRaisesRegex(GeminiError, "관찰하지 않은"):

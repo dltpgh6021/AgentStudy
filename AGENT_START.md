@@ -8,6 +8,14 @@
 - 후보 생성 → 파일 도구 → 평가 → 선택 → 확장을 구현했다. 기본값은 깊이 2, 분기 3, 유지 후보 1이다.
 - 현재 Agent와 분석 예제의 자동 테스트 11개가 통과했다. 모델 응답은 모의 데이터로 테스트한다.
 - 실제 diverse 실행도 완료됐다. `outputs/agent-diverse-01/report.md`에 요청·응답 5회와 선택 경로가 기록돼 있다. 설명의 정확성은 코드와 별도로 대조한다.
+- 결과 정리는 [experiments/week-04-agent.md](experiments/week-04-agent.md)에 작성했다. 전체 25,284토큰·약 50.469초의 실행이며, tot/cot 비교와 가중치 변경 실험은 아직 하지 않았다.
+
+## 먼저 기존 결과 읽기
+
+실험 정리 → 원본 report.md → trace.json·calls.json 순서로 읽는다.
+report.md의 completed는 프로그램 처리 완료이지, 모든 설명의 정확성 검증 완료가 아니다.
+이번 선택 경로는 cli.py 30줄과 analyzer.py 60줄을 관찰했다. 핵심 함수는 그 이후에 있어 본문까지 확인하지 못했다.
+세 파일만 허용한 실행이라 테스트 파일도 읽을 수 없었다. 관점 다양성의 효과는 아직 결론 내릴 수 없다.
 
 ## 1. 실제 분석 한 번 실행
 
@@ -49,16 +57,19 @@ CoALA는 설계 틀이며 별도 라이브러리를 설치하는 기능이 아�
 장기 기억 자동 회상·학습, 되돌아가기, 여러 부모를 유지하는 탐색은 이후 확장 대상이다.
 cot 모드나 다른 관점 지시가 모델의 내부 추론을 통제·관측한다는 뜻은 아니다. 원 논문 전체 재현으로 주장하지 않는다.
 
-## 3. 학습을 드러낼 네 작업 (약 2시간)
+## 3. 후속 학습 작업 (약 2시간, 아래 비교는 아직 미실행)
 
 1. policy.py의 perspectives, score_candidate, choose_candidate를 읽고 선택 방식을 설명한다 — 25분.
 2. 위 명령으로 실제 분석을 실행하고 후보 하나의 도구 호출·평가·선택 과정을 따라간다 — 25분.
 3. 같은 질문과 같은 파일로 tot 모드를 실행해 관점 지시의 효과를 관찰한다 — 30분.
-4. 왜 그런 차이가 생겼는지 코드 근거와 한계를 experiments/week-04-agent.md에 기록한다 — 30분.
+4. 새로 관찰한 차이와 코드 근거를 experiments/week-04-agent.md의 기존 결과와 구분해서 추가한다 — 30분. 원본 실행 로그는 덮어쓰지 않는다.
 
 ```powershell
 .\.venv\Scripts\python.exe run_agent.py analyze . --include src/repo_scout/analyzer.py src/repo_scout/cli.py pyproject.toml --mode tot -o outputs/agent-tot-01
 ```
+
+비교할 두 실행의 모델·질문·자료·깊이·후보 수를 동일하게 유지하고 trace.json의 파일 해시를 확인한다.
+테스트 관점을 제대로 조사하려면 테스트 파일을 허용하는 별도 실험이 필요하다. 이때 모든 비교 모드의 자료를 함께 바꾼다.
 
 선택 기준은 관련성·근거·질문 해결 범위 각 0~2점의 합이다. 관찰하지 않은 위치를 인용한 후보는 선택 대상에서 제외한다.
 동점이면 먼저 생성된 후보를 유지한다. 모델의 자체 점수는 정답률이 아니므로 코드와 대조한다.
@@ -106,6 +117,8 @@ diagnose는 키를 읽거나 API를 호출하지 않고 DNS만 확인한다. che
 tot와 diverse는 같은 단계 수·후보 수·모델을 사용하지만 선택한 파일·응답 토큰 수는 달라질 수 있다.
 모델 기본 추론 설정도 영향을 주므로 결과 차이를 오직 관점 다양성 때문이라고 단정하지 않는다.
 같은 응답에 생성된 후보들은 독립 표본이 아니며, 한 저장소의 결과를 일반화하지 않는다.
+
+문서 수정 후 GitHub 업로드 명령은 [README의 업로드 절차](README.md#변경-내용을-github에-업로드)를 참고한다.
 
 - [Gemini Interactions API](https://ai.google.dev/gemini-api/docs/interactions-overview)
 - [Gemini Structured Outputs](https://ai.google.dev/gemini-api/docs/structured-output)
